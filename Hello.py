@@ -1,51 +1,61 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022)
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+import tkinter as tk
+from tkinter import filedialog
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+import seaborn as sns
+import matplotlib.pyplot as plt
 
-import streamlit as st
-from streamlit.logger import get_logger
+def browse_file():
+    file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
+    entry_path.delete(0, tk.END)
+    entry_path.insert(tk.END, file_path)
 
-LOGGER = get_logger(__name__)
+def load_data_and_classify():
+    file_path = entry_path.get()
+    df = pd.read_csv(file_path)
 
+    # Assuming Outcome is the target column
+    X = df.drop('Outcome', axis=1)
+    y = df['Outcome']
 
-def run():
-    st.set_page_config(
-        page_title="Hello",
-        page_icon="👋",
-    )
+    # Split the data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    st.write("# Welcome to Streamlit! 👋")
+    # Initialize SVM classifier
+    svm_classifier = SVC(kernel='linear')
+    svm_classifier.fit(X_train, y_train)
 
-    st.sidebar.success("Select a demo above.")
+    # Make predictions on the test set
+    predictions = svm_classifier.predict(X_test)
 
-    st.markdown(
-        """
-        Streamlit is an open-source app framework built specifically for
-        Machine Learning and Data Science projects.
-        **👈 Select a demo from the sidebar** to see some examples
-        of what Streamlit can do!
-        ### Want to learn more?
-        - Check out [streamlit.io](https://streamlit.io)
-        - Jump into our [documentation](https://docs.streamlit.io)
-        - Ask a question in our [community
-          forums](https://discuss.streamlit.io)
-        ### See more complex demos
-        - Use a neural net to [analyze the Udacity Self-driving Car Image
-          Dataset](https://github.com/streamlit/demo-self-driving)
-        - Explore a [New York City rideshare dataset](https://github.com/streamlit/demo-uber-nyc-pickups)
-    """
-    )
+    # Display accuracy
+    accuracy = accuracy_score(y_test, predictions)
+    lbl_accuracy.config(text=f"Accuracy: {accuracy:.2f}")
 
+    # Display data visualization
+    sns.pairplot(df, hue='Outcome')
+    plt.show()
 
-if __name__ == "__main__":
-    run()
+# GUI setup
+root = tk.Tk()
+root.title("Diabetes Data SVM Classifier")
+
+# File path entry
+entry_path = tk.Entry(root, width=50)
+entry_path.grid(row=0, column=0, padx=10, pady=10)
+
+# Browse button
+btn_browse = tk.Button(root, text="Browse", command=browse_file)
+btn_browse.grid(row=0, column=1, padx=10, pady=10)
+
+# Load and classify button
+btn_load_classify = tk.Button(root, text="Load Data and Classify", command=load_data_and_classify)
+btn_load_classify.grid(row=1, column=0, columnspan=2, pady=10)
+
+# Accuracy label
+lbl_accuracy = tk.Label(root, text="")
+lbl_accuracy.grid(row=2, column=0, columnspan=2)
+
+root.mainloop()
